@@ -16,14 +16,14 @@
 
     <!--reader-->
 	<beans:bean id="weatherRawFile" class="org.springframework.core.io.FileSystemResource">
-		<beans:constructor-arg value="classpath:sample/1901"/>
+		<beans:constructor-arg value="${user.home}/sample/1901"/>
 	</beans:bean>
 
     <beans:bean id="weatherRawLineMapper" class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
         <beans:property name="lineTokenizer">
             <beans:bean class="org.springframework.batch.item.file.transform.FixedLengthTokenizer">
-                <beans:property name="names" value="firstName,middleInitial,lastName,addressNumber,street,city,state,zip"/>
-                <beans:property name="columns" value="1-10,11,12-21,22-27,28-47,48-56,57-58,59-63"/>
+                <beans:property name="names" value="usaf,wban,observationDate,observationTime,latitude,longitude,elevation,windDirection,skyCeilingHeight,visibilityDistance,airTemperature,dewPointTemperature,atmosphericPressure,suffix"/>
+                <beans:property name="columns" value="5-10,11-15,16-23,24-27,29-34,35-41,47-51,61-63,71-75,79-84,88-92,94-98,100-104,105-"/>
             </beans:bean>
         </beans:property>
         <beans:property name="fieldSetMapper">
@@ -40,13 +40,23 @@
 		<beans:property name="lineMapper" ref="weatherRawLineMapper"/>
 	</beans:bean>
 
+    <beans:bean id="weatherItemProcessor" class="com.apress.springbatch.statement.processor.WeatherItemProcessor"/>
 
+    <beans:bean id="weatherItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter">
+        <beans:property name="resource" ref="temperatureFile" />
+        <beans:property name="lineAggregator">
+            <beans:bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator"/>
+        </beans:property>
+    </beans:bean>
 
+    <beans:bean id="temperatureFile" class="org.springframework.core.io.FileSystemResource">
+        <beans:constructor-arg value="${user.home}/sample/output/temperatureFile.csv"/>
+    </beans:bean>
 
 
 	<step id="maxTemperature">
 		<tasklet>
-			<chunk reader="weatherRawReader" processor="customerLookupItemProcessor" writer="customerTransactionItemWriter" commit-interval="100"/>
+			<chunk reader="weatherRawReader" processor="weatherItemProcessor" writer="weatherItemWriter" commit-interval="100"/>
 		</tasklet>
 	</step>
 
